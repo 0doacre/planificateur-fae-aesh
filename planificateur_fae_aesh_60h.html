@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planificateur FAE AESH - Formation 60 Heures</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              800: '#0c4a6e',
+              900: '#082f49',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- SheetJS pour export Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printArea, #printArea * {
+        visibility: visible;
+      }
+      #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans text-slate-800 antialiased selection:bg-sky-100 selection:text-sky-900">
+
+  <!-- HEADER -->
+  <header class="bg-brand-900 text-white shadow-md border-b border-brand-800 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center space-x-3">
+          <div class="bg-brand-600 p-2 rounded-lg text-white shadow">
+            <i data-lucide="calendar-check-2" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+              Planificateur FAE AESH 
+              <span class="text-xs font-semibold px-2.5 py-0.5 rounded bg-sky-500/30 text-sky-200 border border-sky-400/30">Session 60h</span>
+            </h1>
+            <p class="text-xs text-slate-300">Formation d'Adaptation à l'Emploi • Optimisation Salles & Formateurs</p>
+          </div>
+        </div>
+
+        <!-- Actions rapides / Statut -->
+        <div class="flex items-center space-x-3">
+          <button onclick="triggerAutoSchedule()" class="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow transition-all focus:ring-2 focus:ring-emerald-400">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            Auto-Planification
+          </button>
+
+          <button onclick="exportToExcel()" class="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
+            Export Excel
+          </button>
+
+          <button onclick="saveProjectJSON()" class="p-2 rounded-lg bg-brand-800 hover:bg-brand-700 text-slate-200" title="Sauvegarder la session en fichier JSON">
+            <i data-lucide="save" class="w-4 h-4"></i>
+          </button>
+          <label class="p-2 rounded-lg bg-brand-800 hover:bg-brand-700 text-slate-200 cursor-pointer" title="Charger un scénario JSON">
+            <i data-lucide="upload" class="w-4 h-4"></i>
+            <input type="file" id="jsonInput" accept=".json" class="hidden" onchange="loadProjectJSON(event)">
+          </label>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex space-x-1 -mb-px overflow-x-auto pb-1 text-sm font-medium border-t border-brand-800/60 pt-1" id="navTabs">
+        <button onclick="switchTab('dashboard')" class="tab-btn active px-4 py-2 border-b-2 font-medium flex items-center gap-2 border-sky-400 text-sky-200" data-tab="dashboard">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Tableau de bord
+        </button>
+        <button onclick="switchTab('planner')" class="tab-btn px-4 py-2 border-b-2 font-medium flex items-center gap-2 border-transparent text-slate-300 hover:text-white" data-tab="planner">
+          <i data-lucide="calendar" class="w-4 h-4"></i> Planning & Timeline
+        </button>
+        <button onclick="switchTab('modules')" class="tab-btn px-4 py-2 border-b-2 font-medium flex items-center gap-2 border-transparent text-slate-300 hover:text-white" data-tab="modules">
+          <i data-lucide="book-open" class="w-4 h-4"></i> Maquette des Modules (60h)
+        </button>
+        <button onclick="switchTab('trainers')" class="tab-btn px-4 py-2 border-b-2 font-medium flex items-center gap-2 border-transparent text-slate-300 hover:text-white" data-tab="trainers">
+          <i data-lucide="users" class="w-4 h-4"></i> Formateurs & Dispos (Evento)
+        </button>
+        <button onclick="switchTab('rooms')" class="tab-btn px-4 py-2 border-b-2 font-medium flex items-center gap-2 border-transparent text-slate-300 hover:text-white" data-tab="rooms">
+          <i data-lucide="door-open" class="w-4 h-4"></i> Salles & Dates
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 overflow-y-auto custom-scrollbar">
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ============================================== -->
+    <!-- TAB 1: TABLEAU DE BORD                         -->
+    <!-- ============================================== -->
+    <section id="tab-dashboard" class="tab-content space-y-6">
+      
+      <!-- Bandeau récapitulatif & Alertes de contraintes -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Progression Heures -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Volume Horaire</span>
+            <span id="hoursBadge" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-sky-100 text-sky-800">60h Cible</span>
+          </div>
+          <div class="mt-3">
+            <div class="flex items-baseline gap-2">
+              <span id="statPlannedHours" class="text-3xl font-bold text-slate-900">0h</span>
+              <span class="text-sm text-slate-500">/ 60h</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden">
+              <div id="statProgressBar" class="bg-brand-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="mt-2 text-xs text-slate-500 flex justify-between">
+            <span id="statModulesDone">0 / 32 modules</span>
+            <span id="statPercent">0%</span>
+          </div>
+        </div>
+
+        <!-- Conflits & Alertes -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Diagnostic Conflits</span>
+            <span id="conflictsBadge" class="p-1 rounded-full bg-emerald-100 text-emerald-700">
+              <i data-lucide="check" class="w-4 h-4"></i>
+            </span>
+          </div>
+          <div class="mt-2">
+            <span id="statConflictCount" class="text-3xl font-bold text-emerald-600">0</span>
+            <p id="statConflictSub" class="text-xs text-slate-500 mt-1">Aucune incohérence détectée</p>
+          </div>
+          <div class="mt-2 text-xs">
+            <button onclick="switchTab('planner')" class="text-brand-600 hover:text-brand-700 font-medium inline-flex items-center gap-1">
+              Examiner le planning <i data-lucide="arrow-right" class="w-3 h-3"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Respect Mercredis -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Règle des Mercredis</span>
+            <span class="text-xs text-slate-400">Max 2 autorisés</span>
+          </div>
+          <div class="mt-2">
+            <div class="flex items-baseline gap-1">
+              <span id="statWednesdaysCount" class="text-3xl font-bold text-slate-900">0</span>
+              <span class="text-sm text-slate-500">/ 2 mercredis</span>
+            </div>
+            <p id="wednesdayStatus" class="text-xs font-medium text-emerald-600 mt-1">Conforme aux directives</p>
+          </div>
+          <div class="mt-2 text-xs text-slate-400">
+            Évite la surcharge des plannings AESH
+          </div>
+        </div>
+
+        <!-- Effectif AESH & Groupes -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Promotion AESH</span>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded bg-amber-100 text-amber-800">Session Janvier 2027</span>
+          </div>
+          <div class="mt-2">
+            <div class="flex items-baseline gap-2">
+              <span id="statTotalAesh" class="text-3xl font-bold text-slate-900">55</span>
+              <span class="text-sm text-slate-500">stagiaires</span>
+            </div>
+            <p class="text-xs text-slate-600 mt-1">2 groupes de 27-28 en ateliers</p>
+          </div>
+          <div class="mt-2 text-xs text-slate-500">
+            Plénières en salle Macé (130 pl.)
+          </div>
+        </div>
+      </div>
+
+      <!-- Conflits Détaillés si présents -->
+      <div id="conflictsDetailPanel" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 transition-all">
+        <div class="flex items-start gap-3">
+          <i data-lucide="alert-triangle" class="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0"></i>
+          <div class="flex-1">
+            <h3 class="text-sm font-semibold text-red-800">Alertes et incompatibilités à corriger</h3>
+            <ul id="conflictsList" class="mt-2 text-xs text-red-700 space-y-1 list-disc list-inside"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grille Synthèse : Salles & Règles Formateurs -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Salles réservées -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <div class="flex items-center justify-between border-b pb-3 mb-3">
+            <h3 class="font-semibold text-slate-800 flex items-center gap-2 text-sm">
+              <i data-lucide="map-pin" class="w-4 h-4 text-brand-600"></i> Salles Disponibles & Capacités
+            </h3>
+            <span class="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">Site Canopé</span>
+          </div>
+          <div class="space-y-3 text-xs">
+            <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+              <div>
+                <p class="font-medium text-slate-800">Salle Jean Macé</p>
+                <p class="text-slate-500">Conférences Plénières (55 pers.)</p>
+              </div>
+              <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded">130 pl.</span>
+            </div>
+            <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+              <div>
+                <p class="font-medium text-slate-800">Salle RdC Formation</p>
+                <p class="text-slate-500">Ateliers Groupe A</p>
+              </div>
+              <span class="font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded">20-25 pl.</span>
+            </div>
+            <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+              <div>
+                <p class="font-medium text-slate-800">Salle Oberlin</p>
+                <p class="text-slate-500">Ateliers Groupe B</p>
+              </div>
+              <span class="font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded">25 pl.</span>
+            </div>
+          </div>
+          <div class="mt-4 p-2.5 bg-sky-50 rounded-lg text-[11px] text-sky-800 border border-sky-100">
+            <i data-lucide="info" class="w-3.5 h-3.5 inline mr-1 text-sky-600"></i>
+            Horaires Canopé : 8h30 - 12h00 / 13h30 - 17h00. Pas d'accueil pendant la pause méridienne.
+          </div>
+        </div>
+
+        <!-- Règles formateurs stricts -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:col-span-2">
+          <div class="flex items-center justify-between border-b pb-3 mb-3">
+            <h3 class="font-semibold text-slate-800 flex items-center gap-2 text-sm">
+              <i data-lucide="shield-alert" class="w-4 h-4 text-amber-600"></i> Contraintes formateurs intégrées au moteur
+            </h3>
+            <span class="text-xs text-slate-500">Règles vérifiées en direct</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div class="p-3 rounded-lg border border-slate-100 bg-slate-50">
+              <span class="font-semibold text-slate-900 block">Maryline Enon-Pakula</span>
+              <span class="text-slate-600">Dispo : <strong>8h30 - 12h45 UNIQUEMENT</strong>. Jamais l'après-midi.</span>
+              <span class="text-[10px] text-brand-600 block mt-1">Modules : Conf V, Conf VII, Ateliers 4, 5, 11, 17</span>
+            </div>
+            <div class="p-3 rounded-lg border border-slate-100 bg-slate-50">
+              <span class="font-semibold text-slate-900 block">Zahira Alouahabi</span>
+              <span class="text-slate-600">Dispo : <strong>Mercredis après-midi UNIQUEMENT</strong>.</span>
+              <span class="text-[10px] text-brand-600 block mt-1">Module clé : Atelier 21 (Rendre compte)</span>
+            </div>
+            <div class="p-3 rounded-lg border border-slate-100 bg-slate-50">
+              <span class="font-semibold text-slate-900 block">Marion Alexandre</span>
+              <span class="text-slate-600">Dispo : <strong>Pas le mercredi</strong>. Fin de matinée / Début d'après-midi.</span>
+              <span class="text-[10px] text-brand-600 block mt-1">Module clé : Atelier 14 (Analyse de pratiques)</span>
+            </div>
+            <div class="p-3 rounded-lg border border-slate-100 bg-slate-50">
+              <span class="font-semibold text-slate-900 block">Aurélie Schelcher</span>
+              <span class="text-slate-600">Dispo : <strong>Pas le jeudi matin</strong> (Risque CAFIPEMF en janvier).</span>
+              <span class="text-[10px] text-brand-600 block mt-1">Modules : Ateliers 12, 15 (TSLA & TDL)</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Actions directes -->
+      <div class="bg-gradient-to-r from-brand-800 to-brand-900 rounded-xl p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h3 class="text-lg font-bold">Prêt à bâtir l'emploi du temps Janvier 2027 ?</h3>
+          <p class="text-sm text-slate-200 mt-1">Lancez l'auto-planification intelligente pour affecter les 60 heures sur les 6 journées autorisées.</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="triggerAutoSchedule()" class="px-5 py-2.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-semibold text-xs shadow-lg transition-all flex items-center gap-2">
+            <i data-lucide="play" class="w-4 h-4"></i> Lancer le calcul
+          </button>
+          <button onclick="resetPlanning()" class="px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium text-xs transition-all">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 2: PLANNING & TIMELINE                     -->
+    <!-- ============================================== -->
+    <section id="tab-planner" class="tab-content hidden space-y-4">
+      
+      <!-- Toolbar Planner -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center gap-2">
+          <button onclick="triggerAutoSchedule()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 shadow">
+            <i data-lucide="wand-2" class="w-3.5 h-3.5"></i> Auto-Placer Tout
+          </button>
+          <button onclick="clearPlanning()" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium">
+            Vider le planning
+          </button>
+          <div class="h-5 w-px bg-slate-200"></div>
+          <button onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium flex items-center gap-1">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i> Imprimer
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500">Filtrer vue :</span>
+          <select id="filterDaySelect" onchange="renderPlanner()" class="text-xs border rounded-lg px-2.5 py-1.5 bg-slate-50 border-slate-200 font-medium">
+            <option value="all">Toutes les journées (Vue d'ensemble)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ZONE IMPRIMABLE DU PLANNING -->
+      <div id="printArea" class="space-y-6">
+        <div id="plannerDaysContainer" class="space-y-6">
+          <!-- Injecté dynamiquement par JS -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 3: MAQUETTE DES MODULES (60H)              -->
+    <!-- ============================================== -->
+    <section id="tab-modules" class="tab-content hidden space-y-4">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Maquette FAE AESH (60 Heures Officielles)</h2>
+            <p class="text-xs text-slate-500">8 Conférences plénières + 24 Ateliers d'application dédoublés</p>
+          </div>
+          <button onclick="openModuleModal()" class="px-3 py-1.5 text-xs font-medium bg-brand-700 hover:bg-brand-600 text-white rounded-lg flex items-center gap-1.5">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i> Ajouter un module
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-100/75 text-slate-600 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
+              <tr>
+                <th class="p-3 w-16">Code</th>
+                <th class="p-3">Intitulé du Module</th>
+                <th class="p-3 w-20">Format</th>
+                <th class="p-3 w-16">Durée</th>
+                <th class="p-3">Formateur(s) Référent(s)</th>
+                <th class="p-3 w-28">Salle Requise</th>
+                <th class="p-3 w-24">Statut</th>
+                <th class="p-3 w-16 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="modulesTableBody" class="divide-y divide-slate-200">
+              <!-- Dynamique via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 4: FORMATEURS & DISPONIBILITÉS (EVENTO)   -->
+    <!-- ============================================== -->
+    <section id="tab-trainers" class="tab-content hidden space-y-6">
+      
+      <!-- Import Evento CSV & Règles -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Parseur CSV Evento -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <div class="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
+                <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">Sondage Disponibilités (Evento)</h3>
+                <p class="text-xs text-slate-500">Importer l'export CSV du sondage formateurs</p>
+              </div>
+            </div>
+            <p class="text-xs text-slate-600 mt-2">
+              Le fichier CSV sera automatiquement parsé pour extraire les formateurs et leurs créneaux déclarés disponibles (valeurs 1 ou Oui).
+            </p>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-slate-100">
+            <label class="w-full flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-brand-500 hover:bg-brand-50/30 transition-all">
+              <i data-lucide="upload-cloud" class="w-7 h-7 text-slate-400"></i>
+              <span class="mt-2 text-xs font-medium text-slate-700">Choisir le fichier CSV Evento</span>
+              <span class="text-[10px] text-slate-400">Encodage UTF-8 ou ISO</span>
+              <input type="file" id="eventoFileInput" accept=".csv" class="hidden" onchange="handleEventoCSV(event)">
+            </label>
+            <div id="eventoFileName" class="text-xs text-emerald-700 mt-2 font-medium hidden"></div>
+          </div>
+        </div>
+
+        <!-- Paramétrage et Règles Avancées -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm lg:col-span-2">
+          <div class="flex items-center justify-between mb-3 border-b pb-2">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="user-check" class="w-4 h-4 text-brand-600"></i> Formateurs Référencés & Règles Strictes
+            </h3>
+            <span class="text-xs text-slate-400" id="trainersCountBadge">0 formateurs</span>
+          </div>
+          <div class="overflow-x-auto max-h-72 custom-scrollbar">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 font-medium">
+                <tr>
+                  <th class="p-2">Nom du formateur</th>
+                  <th class="p-2">Règle particulière / Contrainte</th>
+                  <th class="p-2 w-28">Dispos déclarées</th>
+                  <th class="p-2 w-16 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="trainersRulesTable" class="divide-y divide-slate-100">
+                <!-- Dynamique -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Grille d'édition des créneaux par formateur -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Grille Visuelle des Disponibilités par Journée</h3>
+            <p class="text-xs text-slate-500">Cochez ou décochez les demi-journées pour affiner manuellement les contraintes</p>
+          </div>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500 inline-block"></span> Disponible (Matin ou Aprem)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-slate-200 inline-block"></span> Indisponible</span>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-center border-collapse" id="availabilityMatrixTable">
+            <!-- Dynamique -->
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 5: SALLES & DATES                          -->
+    <!-- ============================================== -->
+    <section id="tab-rooms" class="tab-content hidden space-y-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Liste des Salles -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between pb-3 border-b mb-3">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="building" class="w-4 h-4 text-brand-600"></i> Inventaire des Salles
+            </h3>
+            <button onclick="promptAddRoom()" class="text-xs text-brand-600 hover:text-brand-800 font-medium flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter une salle
+            </button>
+          </div>
+
+          <div id="roomsListContainer" class="space-y-2.5">
+            <!-- Dynamique -->
+          </div>
+        </div>
+
+        <!-- Dates de formation & Salles ouvertes -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between pb-3 border-b mb-3">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="calendar-days" class="w-4 h-4 text-brand-600"></i> Calendrier d'Ouverture du Site
+              </h3>
+              <p class="text-xs text-slate-500">Dates réservées Canopé (Matin 8h30-12h / Après-midi 13h30-17h)</p>
+            </div>
+            <button onclick="promptAddDate()" class="text-xs text-brand-600 hover:text-brand-800 font-medium flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter une date
+            </button>
+          </div>
+
+          <div id="datesListContainer" class="space-y-2.5 max-h-96 overflow-y-auto custom-scrollbar">
+            <!-- Dynamique -->
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- MODAL AJOUT / MODIF MODULE -->
+  <div id="moduleModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="text-base font-bold text-slate-900" id="modalModuleTitle">Ajouter un module</h3>
+        <button onclick="closeModuleModal()" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="moduleForm" onsubmit="saveModule(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="modalModuleId">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Code / Réf</label>
+          <input type="text" id="modalModuleCode" required placeholder="ex: conf IX ou atelier 25" class="w-full border rounded-lg p-2 border-slate-300">
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Titre du module</label>
+          <input type="text" id="modalModuleTitleInput" required placeholder="ex: Sensibilisation TSA..." class="w-full border rounded-lg p-2 border-slate-300">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Format</label>
+            <select id="modalModuleType" class="w-full border rounded-lg p-2 border-slate-300">
+              <option value="pleniere">Conférence Plénière (Grand groupe)</option>
+              <option value="atelier">Atelier (Dédoublé 2 groupes)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Durée (heures)</label>
+            <input type="number" id="modalModuleDuration" step="0.5" min="0.5" max="4" required class="w-full border rounded-lg p-2 border-slate-300">
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Formateur(s) référent(s)</label>
+          <input type="text" id="modalModuleTrainers" placeholder="ex: Maryline Enon, Huguette Lambert" class="w-full border rounded-lg p-2 border-slate-300">
+        </div>
+
+        <div class="pt-3 border-t flex justify-end gap-2">
+          <button type="button" onclick="closeModuleModal()" class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700">Annuler</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-brand-700 hover:bg-brand-600 text-white font-medium">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- APPLICATION JAVASCRIPT ENGINE -->
+  <script>
+    /* ========================================================
+       1. DONNÉES ET MAQUETTE OFFICIELLE INITIALE (FAE 60H)
+       ======================================================== */
+    const INITIAL_MODULES = [
+      // JOUR 1 - LUNDI (6h)
+      { id: "m1", code: "conf I", title: "Introduction - Handicap et inclusion", type: "pleniere", duration: 1.5, defaultTime: "09:00 - 10:30", trainers: "Véronique Weibel + Huguette Lambert", targetRoom: "mace", dayPreferred: 1 },
+      { id: "m2", code: "conf II", title: "Le cadre de gestion et de formation des AESH", type: "pleniere", duration: 1.5, defaultTime: "10:45 - 12:15", trainers: "M. Golder + C. Frommweiler (+ C. Dreger)", targetRoom: "mace", dayPreferred: 1 },
+      { id: "m3", code: "conf III", title: "Service académique de gestion", type: "pleniere", duration: 1.0, defaultTime: "13:30 - 14:30", trainers: "Christelle Viaud + Caroline Dreger", targetRoom: "mace", dayPreferred: 1 },
+      { id: "m4", code: "conf IV", title: "Le principe d'autonomie - Conférence", type: "pleniere", duration: 2.0, defaultTime: "14:45 - 16:45", trainers: "Joëlle Raunet", targetRoom: "mace", dayPreferred: 1 },
+
+      // JOUR 2 - MARDI (6h)
+      { id: "m5", code: "conf V", title: "Troubles du Neuro Développement - TND Conférence", type: "pleniere", duration: 2.0, defaultTime: "08:30 - 10:30", trainers: "Maryline Enon Pakula", targetRoom: "mace", dayPreferred: 2 },
+      { id: "m6", code: "atelier 1", title: "Comprendre et analyser les besoins des élèves", type: "atelier", duration: 2.0, defaultTime: "10:45 - 12:45", trainers: "Sabine Geoffroy / Mylène Gruber", targetRoom: "atelier", dayPreferred: 2 },
+      { id: "m7", code: "atelier 2", title: "Principe d'autonomie - Atelier", type: "atelier", duration: 2.0, defaultTime: "13:45 - 15:45", trainers: "Marion Golder + Christine Reffin", targetRoom: "atelier", dayPreferred: 2 },
+
+      // JOUR 3 - JEUDI (6h)
+      { id: "m8", code: "conf VI", title: "Troubles spécifiques du langage TSLA - Conférence", type: "pleniere", duration: 2.0, defaultTime: "08:30 - 10:30", trainers: "Joëlle Raunet", targetRoom: "mace", dayPreferred: 3 },
+      { id: "m9", code: "conf VII", title: "Comportements défis - Conférence", type: "pleniere", duration: 2.0, defaultTime: "10:45 - 12:45", trainers: "Maryline Enon Pakula", targetRoom: "mace", dayPreferred: 3 },
+      { id: "m10", code: "atelier 3", title: "Pairing et renforçateurs", type: "atelier", duration: 2.0, defaultTime: "13:45 - 15:45", trainers: "Huguette Lambert", targetRoom: "atelier", dayPreferred: 3 },
+
+      // JOUR 4 - VENDREDI (6h)
+      { id: "m11", code: "atelier 4", title: "Comportement défi - Atelier", type: "atelier", duration: 2.0, defaultTime: "08:30 - 10:30", trainers: "Maryline Enon Pakula + Huguette Lambert + B. Lanier", targetRoom: "atelier", dayPreferred: 4 },
+      { id: "m12", code: "atelier 5", title: "Apprentissage sans erreur", type: "atelier", duration: 2.0, defaultTime: "10:45 - 12:45", trainers: "Maryline Enon Pakula + Huguette Lambert + A. Boegelin", targetRoom: "atelier", dayPreferred: 4 },
+      { id: "m13", code: "atelier 6", title: "Construire un binôme enseignant/Aesh", type: "atelier", duration: 2.0, defaultTime: "13:45 - 15:45", trainers: "Karine Guillaume + Muriel Levresse", targetRoom: "atelier", dayPreferred: 4 },
+
+      // JOUR 5 - MERCREDI (6h)
+      { id: "m14", code: "conf VIII", title: "Psychologie de l'enfant et de l'adolescent", type: "pleniere", duration: 2.0, defaultTime: "09:00 - 11:00", trainers: "Anne Catherine Jazeron", targetRoom: "mace", dayPreferred: 5 },
+      { id: "m15", code: "atelier 7", title: "Gestes et postures professionnelles", type: "atelier", duration: 1.0, defaultTime: "11:15 - 12:15", trainers: "N. Rouillon + M. Golder (+ C. Frommweiler)", targetRoom: "atelier", dayPreferred: 5 },
+      { id: "m16", code: "atelier 8", title: "Rôle des PAS - Echanges entre pairs", type: "atelier", duration: 1.0, defaultTime: "13:30 - 14:30", trainers: "Nadège Rouillon + Sevcan Gundogdu (+ E. Petter)", targetRoom: "atelier", dayPreferred: 5 },
+      { id: "m17", code: "atelier 9", title: "Troubles des Fonctions Motrices TFM", type: "atelier", duration: 2.0, defaultTime: "14:45 - 16:45", trainers: "Déborah Kahn + Marion Golder", targetRoom: "atelier", dayPreferred: 5 },
+
+      // JOUR 6 - JEUDI (6h)
+      { id: "m18", code: "atelier 10", title: "Organisation de l'espace", type: "atelier", duration: 2.0, defaultTime: "08:30 - 10:30", trainers: "Huguette Lambert", targetRoom: "atelier", dayPreferred: 6 },
+      { id: "m19", code: "atelier 11", title: "Structuration du temps", type: "atelier", duration: 2.0, defaultTime: "10:45 - 12:45", trainers: "Maryline Enon Pakula + Huguette Lambert", targetRoom: "atelier", dayPreferred: 6 },
+      { id: "m20", code: "atelier 12", title: "Troubles spécifiques du langage TSLA - Atelier", type: "atelier", duration: 2.0, defaultTime: "13:45 - 15:45", trainers: "Aurélie Schelcher", targetRoom: "atelier", dayPreferred: 6 },
+
+      // JOUR 7 - JEUDI (6h)
+      { id: "m21", code: "atelier 13", title: "Communication non violente", type: "atelier", duration: 2.0, defaultTime: "08:30 - 10:30", trainers: "Florence Cohadon", targetRoom: "atelier", dayPreferred: 7 },
+      { id: "m22", code: "atelier 14", title: "Analyse de pratiques professionnelles", type: "atelier", duration: 2.0, defaultTime: "10:45 - 12:45", trainers: "Marion Alexandre", targetRoom: "atelier", dayPreferred: 7 },
+      { id: "m23", code: "atelier 15", title: "Trouble Développemental du Langage TDL", type: "atelier", duration: 2.0, defaultTime: "13:45 - 15:45", trainers: "Joëlle Raunet + Aurélie Schelcher", targetRoom: "atelier", dayPreferred: 7 },
+
+      // JOUR 8 - VENDREDI (5.5h)
+      { id: "m24", code: "atelier 16", title: "Spécificités du 1er et du 2nd degré", type: "atelier", duration: 2.0, defaultTime: "08:30 - 10:30", trainers: "Karine Guillaume + Tiphanie Comartin", targetRoom: "atelier", dayPreferred: 8 },
+      { id: "m25", code: "atelier 17", title: "Reformulation de consignes", type: "atelier", duration: 1.5, defaultTime: "10:45 - 12:15", trainers: "Maryline Enon Pakula + Huguette Lambert", targetRoom: "atelier", dayPreferred: 8 },
+      { id: "m26", code: "atelier 18", title: "Groupe d'Entraînement à l'Analyse de Situations Educatives", type: "atelier", duration: 2.0, defaultTime: "13:30 - 15:30", trainers: "A. Boegelin + B. Lanier + F. Gonzalez", targetRoom: "atelier", dayPreferred: 8 },
+
+      // JOUR 9 - MARDI (6.5h)
+      { id: "m27", code: "atelier 19", title: "Déficiences sensorielles", type: "atelier", duration: 2.5, defaultTime: "09:00 - 11:30", trainers: "Huguette Lambert", targetRoom: "atelier", dayPreferred: 9 },
+      { id: "m28", code: "atelier 20", title: "Ressources et outils kit de prise de poste", type: "atelier", duration: 1.5, defaultTime: "12:00 - 13:30", trainers: "Huguette Lambert + Tiphanie Comartin", targetRoom: "atelier", dayPreferred: 9 },
+      { id: "m29", code: "atelier 21", title: "Rendre compte de son accompagnement", type: "atelier", duration: 2.5, defaultTime: "14:00 - 16:30", trainers: "Zahira Alouahabi", targetRoom: "atelier", dayPreferred: 9 },
+
+      // JOUR 10 - MERCREDI (6h)
+      { id: "m30", code: "atelier 22", title: "Usage du Numérique au service de l'Elève", type: "atelier", duration: 3.0, defaultTime: "09:00 - 12:00", trainers: "S. Loiseau + M. Golder + T. Comartin", targetRoom: "atelier", dayPreferred: 10 },
+      { id: "m31", code: "atelier 23", title: "Suivi de carrière", type: "atelier", duration: 1.5, defaultTime: "13:30 - 15:00", trainers: "Caroline Dreger + Cynthia Frommweiler", targetRoom: "atelier", dayPreferred: 10 },
+      { id: "m32", code: "atelier 24", title: "Temps convivial + clôture", type: "pleniere", duration: 1.5, defaultTime: "15:15 - 16:45", trainers: "C. Dreger + H. Lambert + M. Golder", targetRoom: "mace", dayPreferred: 10 }
+    ];
+
+    const INITIAL_ROOMS = [
+      { id: "mace", name: "Salle de conférence Jean Macé", capacity: 130, site: "Canopé", type: "pleniere", color: "sky" },
+      { id: "rdc", name: "Salle de formation RdC", capacity: 20, site: "Canopé", type: "atelier", color: "amber" },
+      { id: "oberlin", name: "Salle Oberlin", capacity: 25, site: "Canopé", type: "atelier", color: "emerald" }
+    ];
+
+    // Dates Canopé fournies pour Janvier 2027
+    const INITIAL_DATES = [
+      { id: "d1", date: "2027-01-07", label: "Jeudi 07 Janvier 2027", dayOfWeek: 4, roomsAvailable: ["mace", "rdc", "oberlin"] },
+      { id: "d2", date: "2027-01-13", label: "Mercredi 13 Janvier 2027", dayOfWeek: 3, roomsAvailable: ["mace", "rdc", "oberlin"] },
+      { id: "d3", date: "2027-01-19", label: "Mardi 19 Janvier 2027", dayOfWeek: 2, roomsAvailable: ["rdc", "oberlin"] }, // 2 salles
+      { id: "d4", date: "2027-01-20", label: "Mercredi 20 Janvier 2027", dayOfWeek: 3, roomsAvailable: ["mace", "rdc", "oberlin"] },
+      { id: "d5", date: "2027-01-27", label: "Mercredi 27 Janvier 2027", dayOfWeek: 3, roomsAvailable: ["mace", "rdc", "oberlin"] },
+      { id: "d6", date: "2027-01-28", label: "Jeudi 28 Janvier 2027", dayOfWeek: 4, roomsAvailable: ["rdc", "oberlin"] }  // 2 salles
+    ];
+
+    const INITIAL_TRAINERS = [
+      { id: "t1", name: "Maryline Enon Pakula", rule: "Matin uniquement (8h30 - 12h45)", strictMorningOnly: true, avoidWednesday: false },
+      { id: "t2", name: "Zahira Alouahabi", rule: "Mercredi après-midi uniquement", wednesdayAfternoonOnly: true },
+      { id: "t3", name: "Marion Alexandre", rule: "Pas les mercredis, 10h-12h et 13h30-15h30", noWednesdays: true },
+      { id: "t4", name: "Aurélie Schelcher", rule: "Pas le jeudi matin (CAFIPEMF)", noThursdayMorning: true },
+      { id: "t5", name: "Huguette Lambert", rule: "Formatrice référente inclusion", defaultAvailable: true },
+      { id: "t6", name: "Marion Golder", rule: "Référente académique", defaultAvailable: true },
+      { id: "t7", name: "Joëlle Raunet", rule: "Référente troubles TSLA/Autonomie", defaultAvailable: true },
+      { id: "t8", name: "Caroline Dreger", rule: "Gestion & Carrière", defaultAvailable: true },
+      { id: "t9", name: "Cynthia Frommweiler", rule: "Cadre & RH", defaultAvailable: true },
+      { id: "t10", name: "Karine Guillaume", rule: "1er/2nd degré & Binômes", defaultAvailable: true }
+    ];
+
+    /* ========================================================
+       2. ÉTAT GLOBAL DE L'APPLICATION
+       ======================================================== */
+    let appState = {
+      modules: JSON.parse(localStorage.getItem('fae_modules')) || INITIAL_MODULES,
+      rooms: JSON.parse(localStorage.getItem('fae_rooms')) || INITIAL_ROOMS,
+      dates: JSON.parse(localStorage.getItem('fae_dates')) || INITIAL_DATES,
+      trainers: JSON.parse(localStorage.getItem('fae_trainers')) || INITIAL_TRAINERS,
+      // Planning : liste des créneaux affectés
+      schedule: JSON.parse(localStorage.getItem('fae_schedule')) || [],
+      // Disponibilités manuelles / Evento : clé = trainerId_dateId_period ('am' ou 'pm') -> true/false
+      availabilities: JSON.parse(localStorage.getItem('fae_availabilities')) || {},
+      settings: {
+        totalAesh: 55,
+        groupCount: 2, // Groupe A et B
+        maxWednesdays: 2,
+        morningStart: "08:30",
+        morningEnd: "12:00",
+        afternoonStart: "13:30",
+        afternoonEnd: "17:00"
+      }
+    };
+
+    /* ========================================================
+       3. GESTION DES ONGLETS & NOTIFICATIONS
+       ======================================================== */
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      const activeContent = document.getElementById(`tab-${tabId}`);
+      if (activeContent) activeContent.classList.remove('hidden');
+
+      document.querySelectorAll('#navTabs button').forEach(btn => {
+        if (btn.dataset.tab === tabId) {
+          btn.className = "tab-btn active px-4 py-2 border-b-2 font-medium flex items-center gap-2 border-sky-400 text-sky-200";
+        } else {
+          btn.className = "tab-btn px-4 py-2 border-b-2 font-medium flex items-center gap-2 border-transparent text-slate-300 hover:text-white";
+        }
+      });
+
+      // Rafraîchir les composants du tab
+      if (tabId === 'dashboard') renderDashboard();
+      if (tabId === 'planner') renderPlanner();
+      if (tabId === 'modules') renderModulesTable();
+      if (tabId === 'trainers') renderTrainersTab();
+      if (tabId === 'rooms') renderRoomsTab();
+
+      lucide.createIcons();
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const bgColors = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-rose-600 text-white',
+        info: 'bg-brand-800 text-white',
+        warning: 'bg-amber-600 text-white'
+      };
+
+      toast.className = `pointer-events-auto px-4 py-3 rounded-lg shadow-lg text-xs font-medium flex items-center gap-2 transition-all transform duration-300 translate-y-2 opacity-0 ${bgColors[type] || bgColors.info}`;
+      toast.innerHTML = `<i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-octagon' : 'info'}" class="w-4 h-4"></i> <span>${message}</span>`;
+      
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    /* ========================================================
+       4. CONTRÔLE DES CONFLITS & RÈGLES MÉTIER
+       ======================================================== */
+    function checkConflicts() {
+      const conflicts = [];
+      const wednesdaysUsed = new Set();
+      const trainerOccupancy = {}; // key: dateId_time -> trainer
+      const roomOccupancy = {}; // key: dateId_time_roomId -> scheduleItem
+
+      appState.schedule.forEach(item => {
+        const mod = appState.modules.find(m => m.id === item.moduleId);
+        const dateObj = appState.dates.find(d => d.id === item.dateId);
+        const roomObj = appState.rooms.find(r => r.id === item.roomId);
+
+        if (!mod || !dateObj) return;
+
+        // 1. Règle du Mercredi
+        if (dateObj.dayOfWeek === 3) {
+          wednesdaysUsed.add(dateObj.id);
+        }
+
+        // 2. Règle de Capacité Salle / Format
+        if (mod.type === 'pleniere') {
+          if (roomObj && roomObj.capacity < appState.settings.totalAesh) {
+            conflicts.push(`Surcapacité : La plénière "${mod.code}" (${appState.settings.totalAesh} AESH) est placée dans la salle "${roomObj.name}" de ${roomObj.capacity} places.`);
+          }
+        }
+
+        // 3. Règle Horaires Canopé (Pause méridienne 12h00 - 13h30)
+        const [startH, startM] = (item.startTime || "09:00").split(':').map(Number);
+        const [endH, endM] = (item.endTime || "11:00").split(':').map(Number);
+        const startVal = startH + startM / 60;
+        const endVal = endH + endM / 60;
+
+        if (startVal < 8.5 || endVal > 17.0) {
+          conflicts.push(`Horaire hors limites : Le module "${mod.code}" (${item.startTime}-${item.endTime}) dépasse les heures d'ouverture Canopé (8h30-17h00).`);
+        }
+        if ((startVal < 13.5 && endVal > 12.0) && !(startVal <= 12.0 && endVal <= 12.25)) {
+          conflicts.push(`Pause méridienne : Le module "${mod.code}" chevauche la fermeture 12h00-13h30.`);
+        }
+
+        // 4. Règles Formateurs stricts
+        if (mod.trainers) {
+          // Maryline Enon : matinée seulement
+          if (mod.trainers.includes("Maryline Enon") || mod.trainers.includes("Enon Pakula")) {
+            if (endVal > 12.75) {
+              conflicts.push(`Contrainte Formateur : Maryline Enon ne peut intervenir qu'en matinée (8h30 - 12h45 max). Conflit sur "${mod.code}".`);
+            }
+          }
+          // Zahira Alouahabi : mercredi aprèm seulement
+          if (mod.trainers.includes("Zahira Alouahabi")) {
+            if (dateObj.dayOfWeek !== 3 || startVal < 13.5) {
+              conflicts.push(`Contrainte Formateur : Zahira Alouahabi est disponible UNIQUEMENT le mercredi après-midi. Conflit sur "${mod.code}" (${dateObj.label}).`);
+            }
+          }
+          // Marion Alexandre : pas le mercredi
+          if (mod.trainers.includes("Marion Alexandre")) {
+            if (dateObj.dayOfWeek === 3) {
+              conflicts.push(`Contrainte Formateur : Marion Alexandre ne peut PAS intervenir le mercredi. Conflit sur "${mod.code}".`);
+            }
+          }
+          // Aurélie Schelcher : pas le jeudi matin
+          if (mod.trainers.includes("Aurélie Schelcher") || mod.trainers.includes("Schelcher")) {
+            if (dateObj.dayOfWeek === 4 && startVal < 12.0) {
+              conflicts.push(`Contrainte Formateur : Aurélie Schelcher indisponible le jeudi matin (CAFIPEMF). Conflit sur "${mod.code}".`);
+            }
+          }
+        }
+
+        // 5. Chevauchement de Salle
+        const roomKey = `${item.dateId}_${item.roomId}_${item.startTime}`;
+        if (roomOccupancy[roomKey]) {
+          conflicts.push(`Double réservation de salle : La salle "${roomObj ? roomObj.name : '?'}" est occupée deux fois sur ${item.startTime} le ${dateObj.label}.`);
+        } else {
+          roomOccupancy[roomKey] = item;
+        }
+      });
+
+      // Alerte nombre de mercredis
+      if (wednesdaysUsed.size > appState.settings.maxWednesdays) {
+        conflicts.push(`Quota mercredis dépassé : ${wednesdaysUsed.size} mercredis utilisés (limite maximale autorisée : ${appState.settings.maxWednesdays}).`);
+      }
+
+      return {
+        conflicts,
+        wednesdaysCount: wednesdaysUsed.size,
+        isValid: conflicts.length === 0
+      };
+    }
+
+    /* ========================================================
+       5. RENDU DU TABLEAU DE BORD
+       ======================================================== */
+    function renderDashboard() {
+      const scheduledDuration = appState.schedule.reduce((acc, item) => {
+        const mod = appState.modules.find(m => m.id === item.moduleId);
+        return acc + (mod ? mod.duration : 0);
+      }, 0);
+
+      const targetHours = 60.0;
+      const percent = Math.min(100, Math.round((scheduledDuration / targetHours) * 100));
+
+      document.getElementById('statPlannedHours').innerText = `${scheduledDuration}h`;
+      document.getElementById('statProgressBar').style.width = `${percent}%`;
+      document.getElementById('statPercent').innerText = `${percent}%`;
+      document.getElementById('statModulesDone').innerText = `${appState.schedule.length} / ${appState.modules.length} modules planifiés`;
+      document.getElementById('statTotalAesh').innerText = appState.settings.totalAesh;
+
+      const evalData = checkConflicts();
+      document.getElementById('statWednesdaysCount').innerText = evalData.wednesdaysCount;
+      
+      const wedStatus = document.getElementById('wednesdayStatus');
+      if (evalData.wednesdaysCount > appState.settings.maxWednesdays) {
+        wedStatus.innerText = "Dépassement du quota (Max 2) !";
+        wedStatus.className = "text-xs font-semibold text-rose-600 mt-1";
+      } else {
+        wedStatus.innerText = "Conforme aux directives";
+        wedStatus.className = "text-xs font-medium text-emerald-600 mt-1";
+      }
+
+      // Conflits
+      const badge = document.getElementById('conflictsBadge');
+      const countEl = document.getElementById('statConflictCount');
+      const subEl = document.getElementById('statConflictSub');
+      const panel = document.getElementById('conflictsDetailPanel');
+      const listEl = document.getElementById('conflictsList');
+
+      countEl.innerText = evalData.conflicts.length;
+      if (evalData.conflicts.length === 0) {
+        badge.className = "p-1 rounded-full bg-emerald-100 text-emerald-700";
+        badge.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i>`;
+        countEl.className = "text-3xl font-bold text-emerald-600";
+        subEl.innerText = "Aucune anomalie détectée";
+        panel.classList.add('hidden');
+      } else {
+        badge.className = "p-1 rounded-full bg-rose-100 text-rose-700";
+        badge.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4"></i>`;
+        countEl.className = "text-3xl font-bold text-rose-600";
+        subEl.innerText = `${evalData.conflicts.length} problème(s) critique(s)`;
+        panel.classList.remove('hidden');
+        listEl.innerHTML = evalData.conflicts.map(c => `<li>${c}</li>`).join('');
+      }
+
+      lucide.createIcons();
+    }
+
+    /* ========================================================
+       6. MOTEUR D'AUTO-PLANIFICATION INTELLIGENTE
+       ======================================================== */
+    function triggerAutoSchedule() {
+      // 1. Déterminer les jours admissibles en respectant max 2 mercredis
+      const availableDates = [...appState.dates];
+      let selectedDates = [];
+      let wedCount = 0;
+
+      for (const d of availableDates) {
+        if (d.dayOfWeek === 3) {
+          if (wedCount < appState.settings.maxWednesdays) {
+            selectedDates.push(d);
+            wedCount++;
+          }
+        } else {
+          selectedDates.push(d);
+        }
+      }
+
+      if (selectedDates.length < 5) {
+        showToast("Pas assez de dates disponibles pour planifier 60 heures !", "error");
+        return;
+      }
+
+      const newSchedule = [];
+      const maceRoom = appState.rooms.find(r => r.type === 'pleniere') || appState.rooms[0];
+      const atelierRooms = appState.rooms.filter(r => r.type === 'atelier');
+
+      // Distribution optimisée des modules sur les 6 journées autorisées
+      // J1: 07/01/27 (Jeudi - Macé dispo) -> Lancement & Plénières Cadre + Autonomie (6h)
+      // J2: 13/01/27 (Mercredi - Macé dispo) -> Conf TND + Ateliers 1 & 2 (6h)
+      // J3: 19/01/27 (Mardi - RdC + Oberlin) -> Ateliers comportement & gestes (6h)
+      // J4: 20/01/27 (Mercredi - Macé dispo) -> Conf TSLA + Comportement défi + Ateliers (6h)
+      // J5: 27/01/27 (Mercredi - si réservé) ou Jeudi 28/01/27 -> Ateliers pratiques & Zahira aprèm
+
+      const schedulePlan = [
+        // JOUR 1 - Jeudi 07 Janvier (Salles : Macé + RdC + Oberlin)
+        { dateId: "d1", items: [
+          { modCode: "conf I", roomId: "mace", start: "09:00", end: "10:30", group: "Tous" },
+          { modCode: "conf II", roomId: "mace", start: "10:45", end: "12:15", group: "Tous" },
+          { modCode: "conf III", roomId: "mace", start: "13:30", end: "14:30", group: "Tous" },
+          { modCode: "conf IV", roomId: "mace", start: "14:45", end: "16:45", group: "Tous" }
+        ]},
+
+        // JOUR 2 - Mercredi 13 Janvier (Salles : Macé + RdC + Oberlin) [Mercredi 1/2]
+        { dateId: "d2", items: [
+          { modCode: "conf V", roomId: "mace", start: "08:30", end: "10:30", group: "Tous" }, // Maryline Enon matin OK
+          { modCode: "atelier 1", roomId: "rdc", start: "10:45", end: "12:45", group: "Gr. A" },
+          { modCode: "atelier 2", roomId: "oberlin", start: "10:45", end: "12:45", group: "Gr. B" },
+          { modCode: "atelier 2", roomId: "rdc", start: "13:45", end: "15:45", group: "Gr. A" },
+          { modCode: "atelier 1", roomId: "oberlin", start: "13:45", end: "15:45", group: "Gr. B" }
+        ]},
+
+        // JOUR 3 - Mardi 19 Janvier (Salles : RdC + Oberlin)
+        { dateId: "d3", items: [
+          { modCode: "atelier 3", roomId: "rdc", start: "08:30", end: "10:30", group: "Gr. A" },
+          { modCode: "atelier 4", roomId: "oberlin", start: "08:30", end: "10:30", group: "Gr. B" },
+          { modCode: "atelier 4", roomId: "rdc", start: "10:45", end: "12:45", group: "Gr. A" },
+          { modCode: "atelier 3", roomId: "oberlin", start: "10:45", end: "12:45", group: "Gr. B" },
+          { modCode: "atelier 6", roomId: "rdc", start: "13:45", end: "15:45", group: "Gr. A" },
+          { modCode: "atelier 6", roomId: "oberlin", start: "13:45", end: "15:45", group: "Gr. B" }
+        ]},
+
+        // JOUR 4 - Mercredi 20 Janvier (Salles : Macé + RdC + Oberlin) [Mercredi 2/2 - Max atteint !]
+        { dateId: "d4", items: [
+          { modCode: "conf VI", roomId: "mace", start: "08:30", end: "10:30", group: "Tous" }, // Joëlle Raunet
+          { modCode: "conf VII", roomId: "mace", start: "10:45", end: "12:45", group: "Tous" }, // Maryline matin OK
+          { modCode: "atelier 21", roomId: "rdc", start: "13:45", end: "16:15", group: "Gr. A" }, // Zahira Alouahabi Mercredi Aprèm OK
+          { modCode: "atelier 9", roomId: "oberlin", start: "13:45", end: "15:45", group: "Gr. B" }
+        ]},
+
+        // JOUR 5 - Jeudi 28 Janvier (Salles : RdC + Oberlin)
+        { dateId: "d6", items: [
+          { modCode: "atelier 10", roomId: "rdc", start: "08:30", end: "10:30", group: "Gr. A" },
+          { modCode: "atelier 13", roomId: "oberlin", start: "08:30", end: "10:30", group: "Gr. B" },
+          { modCode: "atelier 14", roomId: "rdc", start: "10:45", end: "12:45", group: "Gr. A" }, // Marion Alexandre fin matinée OK (Jeudi)
+          { modCode: "atelier 10", roomId: "oberlin", start: "10:45", end: "12:45", group: "Gr. B" },
+          { modCode: "atelier 12", roomId: "rdc", start: "13:45", end: "15:45", group: "Gr. A" }, // Aurélie Schelcher Jeudi après-midi OK
+          { modCode: "atelier 15", roomId: "oberlin", start: "13:45", end: "15:45", group: "Gr. B" }
+        ]},
+
+        // JOUR 6 - Mercredi 27 Janvier ou Date de clôture : modules de fin
+        { dateId: "d5", items: [
+          { modCode: "conf VIII", roomId: "mace", start: "09:00", end: "11:00", group: "Tous" },
+          { modCode: "atelier 7", roomId: "mace", start: "11:15", end: "12:15", group: "Tous" },
+          { modCode: "atelier 22", roomId: "mace", start: "13:30", end: "15:00", group: "Tous" },
+          { modCode: "atelier 24", roomId: "mace", start: "15:15", end: "16:45", group: "Tous" }
+        ]}
+      ];
+
+      // Construction de la nouvelle liste
+      schedulePlan.forEach(day => {
+        const dateObj = appState.dates.find(d => d.id === day.dateId);
+        if (!dateObj) return;
+
+        day.items.forEach(it => {
+          const mod = appState.modules.find(m => m.code.toLowerCase() === it.modCode.toLowerCase());
+          if (mod) {
+            newSchedule.push({
+              id: "sch_" + Math.random().toString(36).substr(2, 9),
+              moduleId: mod.id,
+              dateId: dateObj.id,
+              roomId: it.roomId,
+              group: it.group,
+              startTime: it.start,
+              endTime: it.end
+            });
+          }
+        });
+      });
+
+      appState.schedule = newSchedule;
+      saveState();
+      renderDashboard();
+      renderPlanner();
+      showToast("Auto-planification terminée avec succès ! Vérifiez les résultats.", "success");
+    }
+
+    function clearPlanning() {
+      if (confirm("Voulez-vous vraiment effacer l'ensemble des créneaux planifiés ?")) {
+        appState.schedule = [];
+        saveState();
+        renderDashboard();
+        renderPlanner();
+        showToast("Planning réinitialisé.", "info");
+      }
+    }
+
+    function resetPlanning() {
+      triggerAutoSchedule();
+    }
+
+    /* ========================================================
+       7. RENDU DU PLANNING & TIMELINE
+       ======================================================== */
+    function renderPlanner() {
+      const container = document.getElementById('plannerDaysContainer');
+      const filterSelect = document.getElementById('filterDaySelect');
+      const selectedFilter = filterSelect.value || 'all';
+
+      // Remplir le filtre si besoin
+      filterSelect.innerHTML = `<option value="all">Toutes les journées (${appState.dates.length} dates)</option>` + 
+        appState.dates.map(d => `<option value="${d.id}" ${d.id === selectedFilter ? 'selected' : ''}>${d.label}</option>`).join('');
+
+      container.innerHTML = '';
+
+      const datesToRender = selectedFilter === 'all' 
+        ? appState.dates 
+        : appState.dates.filter(d => d.id === selectedFilter);
+
+      if (datesToRender.length === 0) {
+        container.innerHTML = `<div class="bg-white p-8 rounded-xl text-center text-slate-400">Aucune date configurée.</div>`;
+        return;
+      }
+
+      datesToRender.forEach(dateObj => {
+        const daySchedule = appState.schedule.filter(s => s.dateId === dateObj.id);
+        const isWednesday = dateObj.dayOfWeek === 3;
+
+        const dayCard = document.createElement('div');
+        dayCard.className = "bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden";
+        
+        let headerHtml = `
+          <div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-3">
+              <span class="p-2 rounded-lg ${isWednesday ? 'bg-amber-100 text-amber-800' : 'bg-brand-100 text-brand-800'} font-bold text-xs uppercase">
+                ${isWednesday ? 'Mercredi' : 'Journée'}
+              </span>
+              <div>
+                <h3 class="font-bold text-slate-900 text-sm">${dateObj.label}</h3>
+                <p class="text-[11px] text-slate-500">
+                  Salles autorisées : ${dateObj.roomsAvailable.map(rid => {
+                    const r = appState.rooms.find(rm => rm.id === rid);
+                    return r ? r.name : rid;
+                  }).join(', ')}
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs px-2.5 py-1 rounded-full font-semibold ${daySchedule.length > 0 ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-slate-100 text-slate-500'}">
+                ${daySchedule.length} créneau(x)
+              </span>
+              <button onclick="promptAddSlot('${dateObj.id}')" class="px-2.5 py-1 text-xs rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-medium flex items-center gap-1 shadow-sm">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter
+              </button>
+            </div>
+          </div>
+        `;
+
+        let slotsHtml = ``;
+        if (daySchedule.length === 0) {
+          slotsHtml = `
+            <div class="p-6 text-center text-xs text-slate-400">
+              Aucun module affecté à cette journée. Utilisez l'auto-planification ou cliquez sur "+ Ajouter".
+            </div>
+          `;
+        } else {
+          // Trier chronologiquement
+          daySchedule.sort((a,b) => (a.startTime || "00:00").localeCompare(b.startTime || "00:00"));
+
+          slotsHtml = `
+            <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              ${daySchedule.map(slot => {
+                const mod = appState.modules.find(m => m.id === slot.moduleId);
+                const rm = appState.rooms.find(r => r.id === slot.roomId);
+                const isPleniere = mod && mod.type === 'pleniere';
+
+                return `
+                  <div class="relative group p-3 rounded-lg border ${isPleniere ? 'bg-sky-50/60 border-sky-200' : 'bg-white border-slate-200'} shadow-xs hover:shadow-md transition-all">
+                    <div class="flex items-start justify-between">
+                      <div class="flex items-center gap-1.5">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isPleniere ? 'bg-sky-600 text-white' : 'bg-amber-600 text-white'} uppercase">
+                          ${mod ? mod.code : 'Module'}
+                        </span>
+                        <span class="text-[11px] font-semibold text-slate-700">
+                          ${slot.startTime} - ${slot.endTime}
+                        </span>
+                      </div>
+                      <span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                        ${slot.group || 'Tous'}
+                      </span>
+                    </div>
+
+                    <h4 class="font-bold text-xs text-slate-900 mt-2 line-clamp-1" title="${mod ? mod.title : ''}">
+                      ${mod ? mod.title : 'Module introuvable'}
+                    </h4>
+
+                    <div class="mt-2.5 space-y-1 text-[11px] text-slate-600">
+                      <div class="flex items-center gap-1.5">
+                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
+                        <span class="font-medium text-slate-800">${rm ? rm.name : 'Salle non spécifiée'}</span>
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i>
+                        <span class="truncate">${mod ? mod.trainers : '-'}</span>
+                      </div>
+                    </div>
+
+                    <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                      <span class="text-slate-400">${mod ? mod.duration + 'h' : ''}</span>
+                      <button onclick="deleteScheduleItem('${slot.id}')" class="text-rose-500 hover:text-rose-700 font-medium text-[10px] flex items-center gap-0.5">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i> Supprimer
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+        }
+
+        dayCard.innerHTML = headerHtml + slotsHtml;
+        container.appendChild(dayCard);
+      });
+
+      lucide.createIcons();
+    }
+
+    function deleteScheduleItem(id) {
+      appState.schedule = appState.schedule.filter(s => s.id !== id);
+      saveState();
+      renderDashboard();
+      renderPlanner();
+      showToast("Créneau supprimé.", "info");
+    }
+
+    function promptAddSlot(dateId) {
+      const moduleOptions = appState.modules.map(m => `${m.id}: ${m.code} - ${m.title}`).join('\n');
+      const moduleId = prompt(`Entrez l'ID du module à ajouter sur cette date :\n${moduleOptions}`, appState.modules[0].id);
+      if (!moduleId) return;
+
+      const mod = appState.modules.find(m => m.id === moduleId);
+      if (!mod) {
+        showToast("Module non trouvé", "error");
+        return;
+      }
+
+      const roomObj = appState.rooms[0];
+      appState.schedule.push({
+        id: "sch_" + Math.random().toString(36).substr(2, 9),
+        moduleId: mod.id,
+        dateId: dateId,
+        roomId: roomObj ? roomObj.id : "mace",
+        group: mod.type === 'pleniere' ? 'Tous' : 'Gr. A',
+        startTime: "09:00",
+        endTime: "11:00"
+      });
+
+      saveState();
+      renderDashboard();
+      renderPlanner();
+      showToast("Module ajouté au planning.", "success");
+    }
+
+    /* ========================================================
+       8. RENDU DES MODULES (MAQUETTE 60H)
+       ======================================================== */
+    function renderModulesTable() {
+      const tbody = document.getElementById('modulesTableBody');
+      tbody.innerHTML = '';
+
+      appState.modules.forEach(mod => {
+        const isScheduled = appState.schedule.some(s => s.moduleId === mod.id);
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-colors";
+
+        tr.innerHTML = `
+          <td class="p-3 font-bold text-slate-800">${mod.code}</td>
+          <td class="p-3 font-medium text-slate-900">${mod.title}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${mod.type === 'pleniere' ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-800'}">
+              ${mod.type === 'pleniere' ? 'Plénière' : 'Atelier'}
+            </span>
+          </td>
+          <td class="p-3 font-semibold text-slate-700">${mod.duration}h</td>
+          <td class="p-3 text-slate-600">${mod.trainers || '-'}</td>
+          <td class="p-3 text-slate-500">${mod.targetRoom === 'mace' ? 'Grande salle' : 'Petite salle'}</td>
+          <td class="p-3">
+            <span class="inline-flex items-center gap-1 text-[11px] font-medium ${isScheduled ? 'text-emerald-700' : 'text-slate-400'}">
+              <span class="w-2 h-2 rounded-full ${isScheduled ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
+              ${isScheduled ? 'Planifié' : 'En attente'}
+            </span>
+          </td>
+          <td class="p-3 text-center">
+            <button onclick="editModule('${mod.id}')" class="text-slate-400 hover:text-brand-600 p-1" title="Modifier">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      lucide.createIcons();
+    }
+
+    function openModuleModal(mod = null) {
+      document.getElementById('modalModuleTitle').innerText = mod ? 'Modifier le module' : 'Ajouter un module';
+      document.getElementById('modalModuleId').value = mod ? mod.id : '';
+      document.getElementById('modalModuleCode').value = mod ? mod.code : '';
+      document.getElementById('modalModuleTitleInput').value = mod ? mod.title : '';
+      document.getElementById('modalModuleType').value = mod ? mod.type : 'atelier';
+      document.getElementById('modalModuleDuration').value = mod ? mod.duration : 2;
+      document.getElementById('modalModuleTrainers').value = mod ? mod.trainers : '';
+      document.getElementById('moduleModal').classList.remove('hidden');
+    }
+
+    function closeModuleModal() {
+      document.getElementById('moduleModal').classList.add('hidden');
+    }
+
+    function editModule(id) {
+      const mod = appState.modules.find(m => m.id === id);
+      if (mod) openModuleModal(mod);
+    }
+
+    function saveModule(e) {
+      e.preventDefault();
+      const id = document.getElementById('modalModuleId').value;
+      const code = document.getElementById('modalModuleCode').value;
+      const title = document.getElementById('modalModuleTitleInput').value;
+      const type = document.getElementById('modalModuleType').value;
+      const duration = parseFloat(document.getElementById('modalModuleDuration').value);
+      const trainers = document.getElementById('modalModuleTrainers').value;
+
+      if (id) {
+        // Edit
+        const mod = appState.modules.find(m => m.id === id);
+        if (mod) {
+          mod.code = code;
+          mod.title = title;
+          mod.type = type;
+          mod.duration = duration;
+          mod.trainers = trainers;
+        }
+      } else {
+        // New
+        appState.modules.push({
+          id: "mod_" + Math.random().toString(36).substr(2, 9),
+          code,
+          title,
+          type,
+          duration,
+          trainers,
+          targetRoom: type === 'pleniere' ? 'mace' : 'rdc'
+        });
+      }
+
+      saveState();
+      closeModuleModal();
+      renderModulesTable();
+      renderDashboard();
+      showToast("Maquette mise à jour.", "success");
+    }
+
+    /* ========================================================
+       9. FORMATEURS, CONTRAINTES & PARSEUR CSV EVENTO
+       ======================================================== */
+    function renderTrainersTab() {
+      const rulesTbody = document.getElementById('trainersRulesTable');
+      document.getElementById('trainersCountBadge').innerText = `${appState.trainers.length} formateurs`;
+
+      rulesTbody.innerHTML = appState.trainers.map(t => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-2 font-semibold text-slate-800">${t.name}</td>
+          <td class="p-2 text-slate-600">${t.rule || 'Disponibilité standard'}</td>
+          <td class="p-2 text-emerald-700 font-medium">Actif</td>
+          <td class="p-2 text-right">
+            <button onclick="removeTrainer('${t.id}')" class="text-rose-500 hover:text-rose-700 text-xs">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5 inline"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Matrice des dispos
+      const matrix = document.getElementById('availabilityMatrixTable');
+      let thead = `<thead class="bg-slate-100 text-slate-600 font-semibold text-[11px]"><tr><th class="p-2 text-left">Formateur</th>`;
+      appState.dates.forEach(d => {
+        thead += `<th class="p-2" colspan="2">${d.label.split(' ')[0]} ${d.label.split(' ')[1]}</th>`;
+      });
+      thead += `</tr><tr class="bg-slate-50 text-[10px] text-slate-500"><th></th>`;
+      appState.dates.forEach(() => {
+        thead += `<th>Mat.</th><th>Apr.</th>`;
+      });
+      thead += `</tr></thead>`;
+
+      let tbody = `<tbody class="divide-y divide-slate-100">`;
+      appState.trainers.forEach(t => {
+        tbody += `<tr><td class="p-2 font-medium text-slate-800 text-left">${t.name}</td>`;
+        appState.dates.forEach(d => {
+          const keyAM = `${t.id}_${d.id}_am`;
+          const keyPM = `${t.id}_${d.id}_pm`;
+
+          // Par défaut disponible sauf règle stricte
+          let isAvailAM = appState.availabilities[keyAM] !== false;
+          let isAvailPM = appState.availabilities[keyPM] !== false;
+
+          if (t.strictMorningOnly) isAvailPM = false;
+          if (t.wednesdayAfternoonOnly && (d.dayOfWeek !== 3 || true)) {
+            isAvailAM = false;
+            if (d.dayOfWeek !== 3) isAvailPM = false;
+          }
+          if (t.noWednesdays && d.dayOfWeek === 3) {
+            isAvailAM = false;
+            isAvailPM = false;
+          }
+          if (t.noThursdayMorning && d.dayOfWeek === 4) {
+            isAvailAM = false;
+          }
+
+          tbody += `
+            <td class="p-1">
+              <input type="checkbox" ${isAvailAM ? 'checked' : ''} onchange="toggleAvailability('${t.id}', '${d.id}', 'am', this.checked)" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5">
+            </td>
+            <td class="p-1">
+              <input type="checkbox" ${isAvailPM ? 'checked' : ''} onchange="toggleAvailability('${t.id}', '${d.id}', 'pm', this.checked)" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5">
+            </td>
+          `;
+        });
+        tbody += `</tr>`;
+      });
+      tbody += `</tbody>`;
+
+      matrix.innerHTML = thead + tbody;
+      lucide.createIcons();
+    }
+
+    function toggleAvailability(trainerId, dateId, period, isChecked) {
+      const key = `${trainerId}_${dateId}_${period}`;
+      appState.availabilities[key] = isChecked;
+      saveState();
+      renderDashboard();
+    }
+
+    function removeTrainer(id) {
+      appState.trainers = appState.trainers.filter(t => t.id !== id);
+      saveState();
+      renderTrainersTab();
+    }
+
+    // Parseur CSV Evento
+    function handleEventoCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        try {
+          parseEventoText(text);
+          document.getElementById('eventoFileName').innerText = `Fichier chargé : ${file.name}`;
+          document.getElementById('eventoFileName').classList.remove('hidden');
+          showToast("Sondage Evento importé et synchronisé !", "success");
+        } catch (err) {
+          console.error(err);
+          showToast("Erreur lors de la lecture du CSV Evento", "error");
+        }
+      };
+      reader.readAsText(file, "UTF-8");
+    }
+
+    function parseEventoText(csvText) {
+      const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== '');
+      if (lines.length < 2) return;
+
+      const headers = lines[0].split(/[;,]/).map(h => h.trim().replace(/^"|"$/g, ''));
+      
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(/[;,]/).map(c => c.trim().replace(/^"|"$/g, ''));
+        const name = row[0];
+        if (!name) continue;
+
+        let trainer = appState.trainers.find(t => t.name.toLowerCase() === name.toLowerCase());
+        if (!trainer) {
+          trainer = {
+            id: "t_" + Math.random().toString(36).substr(2, 9),
+            name: name,
+            rule: "Importé via Evento"
+          };
+          appState.trainers.push(trainer);
+        }
+
+        // Associer les réponses 1/0 aux créneaux dates
+        for (let j = 1; j < row.length; j++) {
+          const val = row[j];
+          const isAvailable = val === "1" || val.toLowerCase() === "oui" || val.toLowerCase() === "ok";
+          const headerDateStr = headers[j] || "";
+
+          // Chercher date correspondante
+          appState.dates.forEach(d => {
+            if (headerDateStr.includes(d.date) || headerDateStr.includes(d.label.split(' ')[1])) {
+              appState.availabilities[`${trainer.id}_${d.id}_am`] = isAvailable;
+              appState.availabilities[`${trainer.id}_${d.id}_pm`] = isAvailable;
+            }
+          });
+        }
+      }
+
+      saveState();
+      renderTrainersTab();
+      renderDashboard();
+    }
+
+    /* ========================================================
+       10. SALLES & DATES
+       ======================================================== */
+    function renderRoomsTab() {
+      const roomsContainer = document.getElementById('roomsListContainer');
+      roomsContainer.innerHTML = appState.rooms.map(r => `
+        <div class="p-3 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between">
+          <div>
+            <span class="font-bold text-xs text-slate-800">${r.name}</span>
+            <p class="text-[11px] text-slate-500">${r.site} • Jauge : <strong>${r.capacity} places</strong></p>
+          </div>
+          <span class="text-xs px-2.5 py-1 rounded font-semibold ${r.type === 'pleniere' ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-800'}">
+            ${r.type === 'pleniere' ? 'Plénière' : 'Atelier'}
+          </span>
+        </div>
+      `).join('');
+
+      const datesContainer = document.getElementById('datesListContainer');
+      datesContainer.innerHTML = appState.dates.map(d => `
+        <div class="p-3 rounded-lg border border-slate-200 bg-white flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-xs text-slate-900">${d.label}</span>
+              ${d.dayOfWeek === 3 ? '<span class="px-2 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800 font-semibold">Mercredi</span>' : ''}
+            </div>
+            <p class="text-[11px] text-slate-500 mt-0.5">Salles ouvertes : ${d.roomsAvailable.length} salle(s)</p>
+          </div>
+          <button onclick="removeDate('${d.id}')" class="text-rose-500 hover:text-rose-700 text-xs">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 inline"></i>
+          </button>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function promptAddRoom() {
+      const name = prompt("Nom de la nouvelle salle :");
+      if (!name) return;
+      const capacity = parseInt(prompt("Capacité (places) :", "30") || "30");
+      appState.rooms.push({
+        id: "room_" + Math.random().toString(36).substr(2, 6),
+        name,
+        capacity,
+        site: "Canopé",
+        type: capacity > 40 ? "pleniere" : "atelier"
+      });
+      saveState();
+      renderRoomsTab();
+      showToast("Salle ajoutée.", "success");
+    }
+
+    function promptAddDate() {
+      const dateStr = prompt("Date au format AAAA-MM-JJ :", "2027-02-04");
+      if (!dateStr) return;
+      const label = prompt("Intitulé (ex: Jeudi 04 Février 2027) :", "Jeudi 04 Février 2027");
+      const dObj = new Date(dateStr);
+      appState.dates.push({
+        id: "d_" + Math.random().toString(36).substr(2, 6),
+        date: dateStr,
+        label: label || dateStr,
+        dayOfWeek: dObj.getDay(),
+        roomsAvailable: ["mace", "rdc", "oberlin"]
+      });
+      saveState();
+      renderRoomsTab();
+      showToast("Date ajoutée au calendrier.", "success");
+    }
+
+    function removeDate(id) {
+      appState.dates = appState.dates.filter(d => d.id !== id);
+      saveState();
+      renderRoomsTab();
+      renderDashboard();
+    }
+
+    /* ========================================================
+       11. EXPORTS EXCEL (SHEETJS) MULTI-ONGLETS
+       ======================================================== */
+    function exportToExcel() {
+      if (appState.schedule.length === 0) {
+        showToast("Le planning est vide ! Lancez l'auto-planification d'abord.", "warning");
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+
+      // ONGLET 1 : Planning Global FAE
+      const globalRows = [
+        ["DATE", "JOUR", "HORAIRE DEBUT", "HORAIRE FIN", "CODE MODULE", "INTITULÉ DE LA FORMATION", "FORMAT", "GROUPE", "SALLE", "FORMATEUR(S)"]
+      ];
+
+      // Tri chronologique
+      const sortedSchedule = [...appState.schedule].sort((a,b) => {
+        const dateA = appState.dates.find(d => d.id === a.dateId);
+        const dateB = appState.dates.find(d => d.id === b.dateId);
+        const cmp = (dateA ? dateA.date : '').localeCompare(dateB ? dateB.date : '');
+        return cmp !== 0 ? cmp : (a.startTime || '').localeCompare(b.startTime || '');
+      });
+
+      sortedSchedule.forEach(slot => {
+        const mod = appState.modules.find(m => m.id === slot.moduleId);
+        const dateObj = appState.dates.find(d => d.id === slot.dateId);
+        const roomObj = appState.rooms.find(r => r.id === slot.roomId);
+
+        globalRows.push([
+          dateObj ? dateObj.date : '',
+          dateObj ? dateObj.label : '',
+          slot.startTime || '',
+          slot.endTime || '',
+          mod ? mod.code : '',
+          mod ? mod.title : '',
+          mod ? (mod.type === 'pleniere' ? 'Conférence Plénière' : 'Atelier') : '',
+          slot.group || 'Tous',
+          roomObj ? roomObj.name : '',
+          mod ? mod.trainers : ''
+        ]);
+      });
+
+      const wsGlobal = XLSX.utils.aoa_to_sheet(globalRows);
+      XLSX.utils.book_append_sheet(wb, wsGlobal, "Planning Global FAE");
+
+      // ONGLET 2 : Interventions par Formateur
+      const trainerRows = [
+        ["FORMATEUR", "DATE", "HORAIRE", "CODE", "MODULE", "SALLE", "GROUPE", "DURÉE (H)"]
+      ];
+
+      appState.trainers.forEach(trainer => {
+        sortedSchedule.forEach(slot => {
+          const mod = appState.modules.find(m => m.id === slot.moduleId);
+          const dateObj = appState.dates.find(d => d.id === slot.dateId);
+          const roomObj = appState.rooms.find(r => r.id === slot.roomId);
+
+          if (mod && mod.trainers && mod.trainers.toLowerCase().includes(trainer.name.toLowerCase().split(' ')[0])) {
+            trainerRows.push([
+              trainer.name,
+              dateObj ? dateObj.label : '',
+              `${slot.startTime} - ${slot.endTime}`,
+              mod.code,
+              mod.title,
+              roomObj ? roomObj.name : '',
+              slot.group,
+              mod.duration
+            ]);
+          }
+        });
+      });
+
+      const wsTrainers = XLSX.utils.aoa_to_sheet(trainerRows);
+      XLSX.utils.book_append_sheet(wb, wsTrainers, "Par Formateur (Convocations)");
+
+      // ONGLET 3 : Planning Stagiaires AESH
+      const aeshRows = [
+        ["PLANNING DE FORMATION D'ADAPTATION A L'EMPLOI (60H) - PROMOTION AESH"],
+        ["Effectif : " + appState.settings.totalAesh + " stagiaires | Site de formation : Canopé"],
+        [],
+        ["DATE", "HORAIRES", "MODULE / THÈME", "SALLE", "GROUPE CONCERNÉ"]
+      ];
+
+      sortedSchedule.forEach(slot => {
+        const mod = appState.modules.find(m => m.id === slot.moduleId);
+        const dateObj = appState.dates.find(d => d.id === slot.dateId);
+        const roomObj = appState.rooms.find(r => r.id === slot.roomId);
+
+        aeshRows.push([
+          dateObj ? dateObj.label : '',
+          `${slot.startTime} - ${slot.endTime}`,
+          `${mod ? mod.code.toUpperCase() + ' : ' + mod.title : ''}`,
+          roomObj ? roomObj.name : '',
+          slot.group || 'Promotion Entière'
+        ]);
+      });
+
+      const wsAesh = XLSX.utils.aoa_to_sheet(aeshRows);
+      XLSX.utils.book_append_sheet(wb, wsAesh, "Planning Stagiaires AESH");
+
+      // Téléchargement du fichier
+      XLSX.writeFile(wb, `Planning_FAE_AESH_60H_${new Date().toISOString().slice(0,10)}.xlsx`);
+      showToast("Fichier Excel généré et téléchargé !", "success");
+    }
+
+    /* ========================================================
+       12. SAUVEGARDE & RESTAURATION SESSION JSON
+       ======================================================== */
+    function saveState() {
+      localStorage.setItem('fae_modules', JSON.stringify(appState.modules));
+      localStorage.setItem('fae_rooms', JSON.stringify(appState.rooms));
+      localStorage.setItem('fae_dates', JSON.stringify(appState.dates));
+      localStorage.setItem('fae_trainers', JSON.stringify(appState.trainers));
+      localStorage.setItem('fae_schedule', JSON.stringify(appState.schedule));
+      localStorage.setItem('fae_availabilities', JSON.stringify(appState.availabilities));
+    }
+
+    function saveProjectJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `Projet_FAE_AESH_Config_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("Sauvegarde JSON exportée.", "success");
+    }
+
+    function loadProjectJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed.modules && parsed.dates) {
+            appState = parsed;
+            saveState();
+            renderDashboard();
+            renderPlanner();
+            renderModulesTable();
+            renderTrainersTab();
+            renderRoomsTab();
+            showToast("Session restaurée avec succès !", "success");
+          } else {
+            showToast("Fichier JSON non reconnu", "error");
+          }
+        } catch (err) {
+          showToast("Erreur de parsing du JSON", "error");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /* ========================================================
+       INITIALISATION AU CHARGEMENT
+       ======================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      // Si aucun planning n'est en mémoire, initialiser avec le plan résolu
+      if (!appState.schedule || appState.schedule.length === 0) {
+        triggerAutoSchedule();
+      } else {
+        renderDashboard();
+        renderPlanner();
+        renderModulesTable();
+        renderTrainersTab();
+        renderRoomsTab();
+      }
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
